@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>周期表ラボ｜元素118種 × 標準模型 学習アプリ</title>
+<meta name="description" content="元素118種を「主な用途」とともに覚える周期表アプリ。クイズ4種、標準模型(素粒子)図解つき。GitHub Pagesでそのまま公開できる単一ファイル構成。">
+<meta name="theme-color" content="#0b0f18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f18; --panel:#121a29; --panel2:#0e1421; --line:#22304a;
+  --text:#e8edf6; --muted:#8f9cb2; --accent:#5eead4;
+  --disp:"Space Grotesk","Noto Sans JP",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--text);
+  font-family:"Noto Sans JP",system-ui,-apple-system,sans-serif;
+  background:radial-gradient(1100px 700px at 85% -10%,#15223d 0%,var(--bg) 55%) fixed,var(--bg);
+  min-height:100vh;
+}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;
+  padding:10px 20px;border-bottom:1px solid var(--line);
+  background:rgba(11,15,24,.85);backdrop-filter:blur(10px);
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{flex:none}
+.brand b{display:block;font-size:15px;letter-spacing:.02em}
+.brand span{display:block;font-size:10px;color:var(--muted);letter-spacing:.14em}
+.tabs{margin-left:auto;display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:transparent;color:var(--muted);font-size:12.5px;padding:7px 15px;border-radius:999px;cursor:pointer}
+.tabs button.on{background:#1d2b47;color:#fff}
+.prog{flex:none;font-family:var(--disp);font-size:12.5px;color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:7px 13px;background:var(--panel2);white-space:nowrap}
+@media (max-width:760px){.brand span{display:none}.prog{display:none}.tabs button{padding:7px 11px;font-size:12px}}
+
+/* ---------- layout ---------- */
+main{max-width:1360px;margin:0 auto;padding:18px 20px 60px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
+#search{
+  flex:1;min-width:230px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  color:var(--text);font:inherit;font-size:13.5px;padding:10px 14px;
+}
+#search::placeholder{color:#5c6a82}
+.today{
+  flex:none;border:1px solid var(--line);background:var(--panel);color:var(--text);
+  border-radius:12px;font-size:12.5px;padding:10px 14px;cursor:pointer;
+}
+.today b{font-family:var(--disp);color:var(--accent)}
+.cats{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);
+  background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;
+}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.chip.on{color:#fff;border-color:var(--c)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+@media (max-width:1020px){.layout{grid-template-columns:1fr}}
+.tblwrap{overflow-x:auto;padding-bottom:6px}
+
+/* ---------- periodic table ---------- */
+.pt{display:grid;grid-template-columns:repeat(18,minmax(50px,1fr));gap:4px;min-width:960px}
+.cell{
+  --c:#8f9cb2;--cbg:rgba(143,156,178,.14);
+  display:flex;flex-direction:column;aspect-ratio:1;border-radius:9px;
+  border:1px solid transparent;background:var(--cbg);color:var(--text);
+  padding:5px 6px;cursor:pointer;position:relative;text-align:center;
+  transition:filter .12s;
+}
+.cell:hover{filter:brightness(1.4)}
+.cell .z{font-family:var(--disp);font-size:9px;color:var(--muted);text-align:left;line-height:1}
+.cell .sym{font-family:var(--disp);font-weight:700;font-size:clamp(13px,1.25vw,17px);color:var(--c);line-height:1;margin:auto 0}
+.cell .nm{font-size:9px;color:var(--muted);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell.dim{opacity:.13;pointer-events:none}
+.cell.sel{border-color:#fff;box-shadow:0 0 0 1px #fff}
+.cell.learned::after{content:"";position:absolute;top:5px;right:6px;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.85)}
+.cell.good{outline:2px solid #4ade80;background:rgba(74,222,128,.28)}
+.cell.bad{outline:2px solid #f87171;background:rgba(248,113,113,.28)}
+.cell.ph{background:transparent;border:1px dashed var(--line);justify-content:center;gap:2px}
+.cell.ph .sym{color:var(--muted);font-size:12px;font-weight:500}
+.cell.ph .nm{font-size:8.5px}
+.gaprow{height:10px;grid-column:1/-1}
+.hint{color:var(--muted);font-size:12px;margin:12px 2px 0;line-height:1.7}
+
+/* ---------- detail panel ---------- */
+.panelbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.detail{position:sticky;top:72px}
+.d-head{display:flex;gap:14px;align-items:center}
+.d-sym{font-family:var(--disp);font-weight:700;font-size:44px;line-height:1}
+.d-head h2{margin:0;font-size:20px;line-height:1.2}
+.d-meta{color:var(--muted);font-size:12px;margin-top:3px;line-height:1.5}
+.d-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0}
+.d-stats div{background:var(--panel2);border-radius:10px;padding:8px 10px;min-width:0}
+.d-stats dt{font-size:10px;color:var(--muted)}
+.d-stats dd{margin:3px 0 0;font-family:var(--disp);font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d-use h3{font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin:0 0 6px;font-weight:500}
+.d-use p{margin:0;font-size:13.5px;line-height:1.8}
+#starBtn{margin-top:15px;width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:11px;padding:11px;font-size:13px;cursor:pointer}
+#starBtn.on{border-color:#f5d05e;color:#f5d05e;background:rgba(245,208,94,.1)}
+.d-close{display:none;position:absolute;top:10px;right:12px;border:0;background:transparent;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 8px}
+@media (max-width:1020px){
+  .detail{position:fixed;inset:auto 0 0 0;max-height:76vh;overflow:auto;z-index:60;
+    border-radius:18px 18px 0 0;border-left:0;border-right:0;border-bottom:0;
+    transform:translateY(105%);transition:transform .28s ease;box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+  .detail.open{transform:none}
+  .d-close{display:block}
+}
+
+/* ---------- quiz ---------- */
+.quiz-wrap{max-width:760px;margin:0 auto}
+.q-sec{margin:0 0 18px}
+.q-sec h3{font-size:12px;color:var(--muted);letter-spacing:.1em;margin:0 0 9px;font-weight:500}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:640px){.mode-grid{grid-template-columns:1fr}}
+.mode-btn{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:12px 14px;color:var(--text);cursor:pointer;text-align:left}
+.mode-btn b{display:block;font-size:14px}
+.mode-btn span{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
+.mode-btn.on{border-color:var(--accent);background:rgba(94,234,212,.08)}
+.setup-row{display:flex;gap:6px;flex-wrap:wrap}
+.bestline{color:var(--muted);font-size:12px;margin:16px 0}
+.start-btn{width:100%;border:0;background:var(--accent);color:#06281f;font-weight:700;font-size:15px;border-radius:13px;padding:15px;cursor:pointer}
+.start-btn:hover{filter:brightness(1.08)}
+.q-top{display:flex;gap:14px;align-items:center;font-family:var(--disp);font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.q-top b{color:var(--text)}
+.q-bar{flex:1;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.q-bar i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .25s}
+.q-text{font-size:19px;font-weight:700;line-height:1.6;margin:4px 0 0}
+.q-quote{margin:14px 0 0;padding:13px 16px;background:var(--panel2);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;font-size:14.5px;line-height:1.9}
+.q-sym{font-family:var(--disp);font-size:30px;color:var(--accent);letter-spacing:.02em}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+@media (max-width:560px){.choices{grid-template-columns:1fr}}
+.choice{padding:17px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:15px;cursor:pointer;text-align:center}
+.choice:hover:enabled{border-color:var(--accent)}
+.choice.ok{border-color:#4ade80;background:rgba(74,222,128,.15);color:#fff}
+.choice.ng{border-color:#f87171;background:rgba(248,113,113,.15);color:#fff}
+.choice:disabled{cursor:default}
+.next-btn{margin-top:16px;width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:13px;font-size:14px;cursor:pointer}
+.next-btn.primary{background:#1d2b47;border-color:#2c3f63}
+.r-score{font-family:var(--disp);font-size:56px;font-weight:700;line-height:1;margin:6px 0 2px}
+.r-sub{color:var(--muted);font-size:13px}
+.miss-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.miss-chips span{font-size:12px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+.r-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.center{text-align:center}
+
+/* ---------- standard model ---------- */
+.lead{color:var(--muted);font-size:13px;line-height:1.9;margin:2px 0 18px;max-width:860px}
+.sm-wrap{overflow-x:auto;padding-bottom:6px}
+.sm{display:grid;grid-template-columns:76px repeat(4,minmax(128px,1fr));gap:8px;min-width:660px}
+.sm .hdr{font-size:11px;color:var(--muted);text-align:center;padding:2px 0 6px;letter-spacing:.06em}
+.sm .lbl{font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:flex-end;text-align:right;padding-right:8px}
+.ptile{
+  --c:#8f9cb2;--cbg:rgba(143,156,178,.13);
+  border:1px solid transparent;background:var(--cbg);border-radius:12px;color:var(--text);
+  padding:13px 14px;cursor:pointer;text-align:left;transition:filter .12s;position:relative;
+}
+.ptile:hover{filter:brightness(1.35)}
+.ptile.sel{border-color:#fff;box-shadow:0 0 0 1px #fff}
+.ptile .s{font-family:var(--disp);font-size:27px;font-weight:700;color:var(--c);line-height:1}
+.ptile .s sub{font-size:.55em}
+.ptile .n{display:block;font-size:11.5px;margin-top:5px}
+.ptile .qm{display:block;font-family:var(--disp);font-size:10px;color:var(--muted);margin-top:7px}
+.higgs-tile{grid-column:1/-1}
+.sm-detail{margin-top:16px}
+.guides{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+@media (max-width:760px){.guides{grid-template-columns:1fr}}
+.guide{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px 18px}
+.guide h3{margin:0 0 7px;font-size:14px}
+.guide h3 em{font-style:normal;font-family:var(--disp);color:var(--accent);margin-right:7px;font-size:12px}
+.guide p{margin:0;font-size:12.5px;line-height:1.9;color:#c7d0de}
+
+footer{color:var(--muted);font-size:11px;text-align:center;padding:26px 20px 40px;line-height:1.9}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+      <circle cx="15" cy="15" r="2.4" fill="#5eead4"/>
+      <ellipse cx="15" cy="15" rx="12" ry="5" stroke="#5eead4" stroke-width="1.1"/>
+      <ellipse cx="15" cy="15" rx="12" ry="5" stroke="#5eead4" stroke-width="1.1" transform="rotate(60 15 15)"/>
+      <ellipse cx="15" cy="15" rx="12" ry="5" stroke="#5eead4" stroke-width="1.1" transform="rotate(120 15 15)"/>
+    </svg>
+    <div><b>周期表ラボ</b><span>118 ELEMENTS × STANDARD MODEL</span></div>
+  </div>
+  <nav class="tabs" aria-label="画面切替">
+    <button data-v="table" class="on">周期表</button>
+    <button data-v="quiz">クイズ</button>
+    <button data-v="sm">標準模型</button>
+  </nav>
+  <div class="prog" id="prog">★ 0/118</div>
+</header>
+
+<main>
+
+  <!-- ================= 周期表 ================= -->
+  <section id="v-table">
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="元素名・記号・番号・用途で検索（例: 電池 / 磁石 / Fe / 29）" aria-label="検索">
+      <button class="today" id="todayChip" type="button"></button>
+    </div>
+    <div class="cats" id="cats"></div>
+    <div class="layout">
+      <div>
+        <div class="tblwrap"><div id="pt" class="pt"></div></div>
+        <p class="hint">セルを押すと、右に「主な用途」つきの詳細が出ます。右上の★は「覚えた」の印で、進捗はこのブラウザに保存されます。</p>
+      </div>
+      <aside id="detail" class="panelbox detail" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <!-- ================= クイズ ================= -->
+  <section id="v-quiz" hidden>
+    <div class="quiz-wrap">
+      <div id="quizSetup">
+        <div class="q-sec"><h3>出題対象</h3>
+          <div class="setup-row" id="subjRow">
+            <button class="chip on" data-subj="elem" type="button">元素 118種</button>
+            <button class="chip" data-subj="part" type="button">素粒子・標準模型 17種</button>
+          </div>
+        </div>
+        <div class="q-sec"><h3>モード</h3><div class="mode-grid" id="modeRow"></div></div>
+        <div class="q-sec" id="rangeSec"><h3>出題範囲</h3>
+          <div class="setup-row" id="rangeRow">
+            <button class="chip on" data-range="all" type="button">全元素</button>
+            <button class="chip" data-range="a" type="button">1〜20</button>
+            <button class="chip" data-range="b" type="button">21〜54</button>
+            <button class="chip" data-range="c" type="button">55〜118</button>
+          </div>
+        </div>
+        <p class="bestline" id="bestLine"></p>
+        <button class="start-btn" id="startBtn" type="button">クイズを始める（10問）</button>
+      </div>
+      <div id="quizStage" hidden>
+        <div class="q-top"><span id="qProg"></span><span>スコア <b id="qScore">0</b></span><span>連続 <b id="qStreak">0</b></span><div class="q-bar"><i id="qBar"></i></div></div>
+        <div class="panelbox" id="qArea"></div>
+      </div>
+      <div id="quizResult" hidden></div>
+    </div>
+  </section>
+
+  <!-- ================= 標準模型 ================= -->
+  <section id="v-sm" hidden>
+    <p class="lead">周期表の元素は、原子核と電子からできています。さらに原子核の中身をたどると、行き着くのが右の17種の「素粒子」。つまり世界の物質は、この表の組合せで説明できる――それが標準模型です。粒子を押すと詳説が出ます。</p>
+    <div class="sm-wrap"><div id="smGrid" class="sm"></div></div>
+    <aside id="smDetail" class="panelbox sm-detail" aria-live="polite"></aside>
+    <div class="guides">
+      <div class="guide"><h3><em>01</em>物質の「かたまり」: クォークとレプトン</h3>
+        <p>クォークは単独では現れず、3つ組や2つ組になって陽子・中性子などのハドロンを作ります（クォークの閉じ込め）。レプトンは電子やニュートリノなど。どちらも「世代」と呼ばれる3組の兄弟があり、日常の物質は第I世代だけで足ります。重い世代ほど不安定で、すぐ軽い粒子へ崩壊します。</p></div>
+      <div class="guide"><h3><em>02</em>3つの世代と質量</h3>
+        <p>同じタイプの粒子は、重さが違うだけで性質はそっくり。第II・第III世代は宇宙線や加速器で一時的に現れる「重い写し」のような存在です。質量そのものは、次のヒッグス機構で生まれます。ニュートリノだけは非常に軽く、質量の由来はまだ未解決です。</p></div>
+      <div class="guide"><h3><em>03</em>力は「粒子」で伝わる</h3>
+        <p>電磁気力は光子（γ）、強い力はグルーオン（g、クォークを陽子に束縛する「のり」）、弱い力はW・Z粒子（ベータ崩壊や太陽の核融合を仲介）が伝えます。重力だけは標準模型の枠外で、その伝達粒子「重力子」はまだ仮説の段階です。</p></div>
+      <div class="guide"><h3><em>04</em>ヒッグスと、その先</h3>
+        <p>真空に満ちるヒッグス場とくっつきやすい粒子ほど重くなる――これが質量の正体という描像です。ヒッグス粒子は1964年の予言から48年後の2012年、周囲27kmの加速器（LHC）で発見され、標準模型の粒子が出そろいました。ただし暗黒物質・暗黒エネルギー、物質と反物質の非対称性など「その先」は未解決のままです。</p></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  用途は代表例の紹介です。原子量は一般的な値を丸めたもの（人工元素は最長寿命核種の質量数を〔 〕で表示）。素粒子の質量値は概数。<br>
+  単一HTMLファイル・オフライン動作。GitHub Pages に置くだけで公開できます。
+</footer>
+
+<script>
+"use strict";
+const DEFAULT_VIEW="table";
+
+/* ================= データ: 元素118種 =================
+   [番号, 記号, 名前, 原子量, 分類, 主な用途・役割] */
+const ELEMENTS=[
+[1,"H","水素","1.008","nonmetal","水素はアンモニア合成や石油精製の基礎原料で、燃料電池を使った次世代エネルギーにも期待がかかる。"],
+[2,"He","ヘリウム","4.0026","noble","ヘリウムは風船を浮かせるほか、MRI磁石の超伝導冷却や半導体製造に不可欠なガス。"],
+[3,"Li","リチウム","6.94","alkali","リチウムはスマホや電気自動車のリチウムイオン電池の心臓部で、双極性障害の治療薬（炭酸塩）にもなる。"],
+[4,"Be","ベリリウム","9.0122","alkearth","ベリリウムは軽くて硬くX線を通しやすいので、X線装置の窓やJWST宇宙望遠鏡の鏡に使う。"],
+[5,"B","ホウ素","10.81","metalloid","ホウ素は耐熱ガラスや洗剤の原料で、原子炉の制御棒として中性子を吸収する働きもある。"],
+[6,"C","炭素","12.011","nonmetal","炭素は鉛筆の芯からダイヤモンド、炭素繊維、半導体研究のグラフェンまで、姿を変えて大活躍する。"],
+[7,"N","窒素","14.007","nonmetal","窒素は空気の約78%を占め、液体窒素として食品を冷凍し、肥料のアンモニアの原料になる。"],
+[8,"O","酸素","15.999","nonmetal","酸素は呼吸と燃焼に不可欠で、医療用ガス、製鉄、ロケットの酸化剤として使われる。"],
+[9,"F","フッ素","18.998","halogen","フッ素は歯の再石灰化を助ける歯磨き粉成分や、フライパンのテフロン（フッ素樹脂）加工で知られる。"],
+[10,"Ne","ネオン","20.180","noble","ネオンは看板の赤橙色の光でおなじみで、レーザーや高電圧の表示灯にも使う。"],
+[11,"Na","ナトリウム","22.990","alkali","ナトリウムは食塩の成分として味の基本で、融雪剤や電池の材料にもなる。"],
+[12,"Mg","マグネシウム","24.305","alkearth","マグネシウムは軽量合金として車や航空機に使われ、葉緑素の中心金属として光合成を支える。"],
+[13,"Al","アルミニウム","26.982","post","アルミニウムは缶や窓枠、車体、送電線に使われる、軽くて錆びにくい代表的な工作材料。"],
+[14,"Si","ケイ素","28.085","metalloid","ケイ素はCPUなど半導体チップや太陽電池の主役で、ガラスやセメントの成分でもある。"],
+[15,"P","リン","30.974","nonmetal","リンはDNAやATPを構成する生命必須元素で、肥料やマッチ、飲料の酸味（リン酸）にも使う。"],
+[16,"S","硫黄","32.06","nonmetal","硫黄は化学工業の要の硫酸の原料で、ゴムの加硫や火薬にも使われ、温泉の香りの主役。"],
+[17,"Cl","塩素","35.45","halogen","塩素は水道水やプールの殺菌に欠かせず、塩ビパイプや各種プラスチックの原料になる。"],
+[18,"Ar","アルゴン","39.948","noble","アルゴンは空気の約1%を占め、溶接時のシールドガスや電球・断熱ガラスの充填に使う。"],
+[19,"K","カリウム","39.098","alkali","カリウムは肥料の三要素の一つで、神経の情報伝達に関わる必須ミネラルでもある。"],
+[20,"Ca","カルシウム","40.078","alkearth","カルシウムは骨や歯を作るほか、セメントや石膏ボード、製鋼時の不純物除去に使う。"],
+[21,"Sc","スカンジウム","44.956","trans","スカンジウムはアルミ合金を強化して自転車や野球バットに使われ、レーザー材料にもなる。"],
+[22,"Ti","チタン","47.867","trans","チタンは軽くて強く体に優しいので、眼鏡フレームや人工関節、ジェットエンジンに使う。白色顔料（酸化物）は塗料の定番。"],
+[23,"V","バナジウム","50.942","trans","バナジウムは鋼の強度を高めて工具などに使われ、大型蓄電池（レドックスフロー電池）としても注目される。"],
+[24,"Cr","クロム","51.996","trans","クロムはステンレス鋼の合金成分で、めっきの輝き、革のなめし、サファイアの赤の正体でもある。"],
+[25,"Mn","マンガン","54.938","trans","マンガンは鋼の強化と脱酸に使われ、乾電池の粉（二酸化物）やガラスの着色にも登場する。"],
+[26,"Fe","鉄","55.845","trans","鉄は建物・車・橋を作る産業の基盤で、体内ではヘモグロビンとして酸素を運ぶ。"],
+[27,"Co","コバルト","58.933","trans","コバルトは電池の正極材や超硬合金に使われ、深い青（コバルトブルー）の顔料としても有名。"],
+[28,"Ni","ニッケル","58.693","trans","ニッケルはステンレス鋼や電池、めっきに使われ、硬貨の材料としてもおなじみ。"],
+[29,"Cu","銅","63.546","trans","銅は電線やモーター、基板に不可欠な電気の通し屋で、殺菌作用があるのでドアノブにも使う。"],
+[30,"Zn","亜鉛","65.38","trans","亜鉛は鉄のサビ防ぎ（めっき）の主役で、乾電池、ダイカスト、サプリメントにも使う。"],
+[31,"Ga","ガリウム","69.723","post","ガリウムはLEDやGaNパワーデバイスなど新しい半導体の主役で、融点が低く体温で溶けるほど。"],
+[32,"Ge","ゲルマニウム","72.630","metalloid","ゲルマニウムはトランジスタの黎明期を支え、今は赤外線レンズや光ファイバーに使う。"],
+[33,"As","ヒ素","74.922","metalloid","ヒ素は歴史上の毒物として悪名高いが、半導体（ヒ化ガリウム）や合金の強化には欠かせない。"],
+[34,"Se","セレン","78.971","nonmetal","セレンは複写機の感光体やガラスの着色に使われ、抗酸化酵素の構成要素としても重要。"],
+[35,"Br","臭素","79.904","halogen","臭素は室温で液体の数少ない元素で、難燃剤や写真の感光剤（臭化銀）に使う。"],
+[36,"Kr","クリプトン","83.798","noble","クリプトンは高効率の照明や二重窓の充填ガスで、かつて長さ（メートル）の定義に使われた。"],
+[37,"Rb","ルビジウム","85.468","alkali","ルビジウムは原子時計に使われ、GPSの正確さや通信基地局の同期を支える。"],
+[38,"Sr","ストロンチウム","87.62","alkearth","ストロンチウムは花火や発煙筒の赤い炎色を作り、フェライト磁石の材料にもなる。"],
+[39,"Y","イットリウム","88.906","trans","イットリウムは白色LEDの蛍光体（YAG）やレーザー、超伝導材料に使われる希土類。"],
+[40,"Zr","ジルコニウム","91.224","trans","ジルコニウムは中性子を吸いにくいため原子炉の燃料被覆管に、ジルコニアとして人工関節や食器にも。"],
+[41,"Nb","ニオブ","92.906","trans","ニオブは超伝導磁石（MRIや加速器）の材料で、鋼の強化材としても使う。"],
+[42,"Mo","モリブデン","95.95","trans","モリブデンは鋼を強く粘り強くし、潤滑剤（二硫化物）や触媒としても活躍する。"],
+[43,"Tc","テクネチウム","〔98〕","trans","テクネチウムは人工元素の第一号で、核医学の画像検査（シンチグラフィ）で定番の放射性同位体。"],
+[44,"Ru","ルテニウム","101.07","trans","ルテニウムはHDDの磁性層やチップ抵抗器に使われ、触媒としても重要。"],
+[45,"Rh","ロジウム","102.91","trans","ロジウムは自動車の排ガス触媒の主役で、装飾品の白銀のめっきにも使う高価な金属。"],
+[46,"Pd","パラジウム","106.42","trans","パラジウムは排ガス触媒や電子部品に使われ、水素を体積で数百倍も吸い込む性質がある。"],
+[47,"Ag","銀","107.87","trans","銀は電気と熱を最もよく通す金属で、電子部品や太陽電池の電極、貨幣・宝飾に使う。"],
+[48,"Cd","カドミウム","112.41","trans","カドミウムはニッカド電池や黄色顔料に使われるが、毒性が強いため用途は絞られている。"],
+[49,"In","インジウム","114.82","post","インジウムはタッチパネルの透明電極（ITO）の主役で、液晶表示を支える。"],
+[50,"Sn","スズ","118.71","post","スズははんだや缶詰のブリキ（めっき）で身近で、銅との合金の青銅は古代から使われる。"],
+[51,"Sb","アンチモン","121.76","metalloid","アンチモンは難燃剤として家の建材に入り、鉛電池の強化や半導体のドーパントにも使う。"],
+[52,"Te","テルル","127.60","metalloid","テルルは太陽電池（カドミウムテルル）や熱電素子、光ディスクの記録層に使う。"],
+[53,"I","ヨウ素","126.90","halogen","ヨウ素は消毒薬（ヨード剤）やCT検査の造影剤に使われ、甲状腺ホルモンの材料でもある。"],
+[54,"Xe","キセノン","131.29","noble","キセノンは自動車ヘッドランプの白い光や、麻酔、宇宙機のイオンエンジンに使う。"],
+[55,"Cs","セシウム","132.91","alkali","セシウムは原子時計で「1秒」の長さを定義する元素で、放射線源（137）や掘削液にも使う。"],
+[56,"Ba","バリウム","137.33","alkearth","バリウムは胃腸検査の造影剤（硫酸塩）になり、花火の緑色や重いコンクリートにも使う。"],
+[57,"La","ランタン","138.91","lantha","ランタンは車の排ガス触媒やカメラレンズの高屈折ガラス、水素吸蔵合金に使う希土類。"],
+[58,"Ce","セリウム","140.12","lantha","セリウムはライターの発火石やガラスの研磨剤、自動車触媒に使う、最も身近な希土類。"],
+[59,"Pr","プラセオジム","140.91","lantha","プラセオジムは強力磁石の性能改善や、溶接用ゴーグルの黄緑フィルターに使う。"],
+[60,"Nd","ネオジム","144.24","lantha","ネオジムは世界最強クラスの磁石で、電気自動車のモーターや風力発電、イヤホンに不可欠。"],
+[61,"Pm","プロメチウム","〔145〕","lantha","プロメチウムは放射線を出す人工希土類で、発光塗料（かつて）や測定器の電池に使う。"],
+[62,"Sm","サマリウム","150.36","lantha","サマリウムは高温でも磁力を保つ磁石（コバルトとの合金）で、レーザーやがん治療薬にも使う。"],
+[63,"Eu","ユウロピウム","151.96","lantha","ユウロピウムはテレビやLEDの赤色蛍光体で、ユーロ紙幣の偽造防止インクにも使う。"],
+[64,"Gd","ガドリニウム","157.25","lantha","ガドリニウムはMRI造影剤の主役で、原子炉の中性子吸収材にも使う。"],
+[65,"Tb","テルビウム","158.93","lantha","テルビウムは照明や表示の緑色蛍光体で、振動を電気に変える磁歪材料（スピーカー）にも。"],
+[66,"Dy","ジスプロシウム","162.50","lantha","ジスプロシウムは磁石が高温で弱るのを防ぐ添加材で、電気自動車のモーターを支える。"],
+[67,"Ho","ホルミウム","164.93","lantha","ホルミウムは元素中最強クラスの磁気モーメントを持ち、医療レーザーや磁石の極片に使う。"],
+[68,"Er","エルビウム","167.26","lantha","エルビウムは光ファイバーの信号を増幅（EDFA）し、世界中のインターネットを支える。"],
+[69,"Tm","ツリウム","168.93","lantha","ツリウムは携帯用X線源や医療レーザーに使われる珍しい希土類。"],
+[70,"Yb","イッテルビウム","173.05","lantha","イッテルビウムは光学格子原子時計として世界最高精度の「秒」を刻む。"],
+[71,"Lu","ルテチウム","174.97","lantha","ルテチウムはPET検査のセンサーや触媒、レンズガラスに使う希土類の最後の一枚。"],
+[72,"Hf","ハフニウム","178.49","trans","ハフニウムは中性子をよく吸うので原子炉の制御棒に、半導体の絶縁膜にも使う。"],
+[73,"Ta","タンタル","180.95","trans","タンタルは小型・大容量コンデンサの材料でスマホを小型化し、体に優しく人工関節にも。"],
+[74,"W","タングステン","183.84","trans","タングステンは全元素中最高の融点（約3422℃）で、電球フィラメントや超硬工具に使う。"],
+[75,"Re","レニウム","186.21","trans","レニウムはジェットエンジンのタービン翼の超合金や、石油精製の触媒に使う。"],
+[76,"Os","オスミウム","190.23","trans","オスミウムは元素中で最も密度が高く、万年筆のペン先や顕微鏡標本の染色に使う。"],
+[77,"Ir","イリジウム","192.22","trans","イリジウムは極めて錆びにくく、火花塞やるつぼに使う。恐竜絶滅の地層で見つかる元素としても有名。"],
+[78,"Pt","白金","195.08","trans","白金は触媒（排ガス・燃料電池）や宝飾、抗がん剤（シスプラチン）に使う。"],
+[79,"Au","金","196.97","trans","金は貨幣・宝飾・投資の代表格で、変色しないため電子機器の接点や宇宙機のめっきにも使う。"],
+[80,"Hg","水銀","200.59","trans","水銀は体温計や蛍光灯に昔から使われたが、毒性が強く水俣条約で用途が制限される。"],
+[81,"Tl","タリウム","204.38","post","タリウムは毒物としても知られるが、赤外線検出器や特殊ガラスに使う。"],
+[82,"Pb","鉛","207.2","post","鉛は車載電池や放射線のシールドで現役だが、毒性のため多くの用途から置き換えが進む。"],
+[83,"Bi","ビスマス","208.98","post","ビスマスは胃腸薬や無鉛はんだ、化粧品のパール光沢に使う、扱いやすい重金属。"],
+[84,"Po","ポロニウム","〔209〕","post","ポロニウムは強烈なα線を出すため、静電気の除去など特殊用途に限られる。キュリー夫人が命名。"],
+[85,"At","アスタチン","〔210〕","halogen","アスタチンは地球上に約30gしかない天然元素で、基礎研究とα線治療の研究以外の用途はない。"],
+[86,"Rn","ラドン","〔222〕","noble","ラドンは地下から染み出す放射性ガスで、住宅の健康リスク測定の対象になる。かつては治療にも使った。"],
+[87,"Fr","フランシウム","〔223〕","alkali","フランシウムは天然に存在する量が最も少ない元素で、研究用にのみ微量が作られる。"],
+[88,"Ra","ラジウム","〔226〕","alkearth","ラジウムはかつて発光時計や治療に広く使われたが、危険性が判明して今はごく限られた用途。"],
+[89,"Ac","アクチニウム","〔227〕","actino","アクチニウムはα線治療薬の研究や中性子源に使われるアクチノイドの起点。"],
+[90,"Th","トリウム","232.04","actino","トリウムは将来の原子燃料（トリウム炉）として研究され、かつてはガスマントルや光学レンズに使った。"],
+[91,"Pa","プロトアクチニウム","231.04","actino","プロトアクチニウムは主に研究用で、海底堆積物の年代測定に使われる。"],
+[92,"U","ウラン","238.03","actino","ウランは原子力発電の燃料（核分裂）の主役で、かつてはガラスの着色（ウランガラス）にも使った。"],
+[93,"Np","ネプツニウム","〔237〕","actino","ネプツニウムは最初に人工合成された超ウラン元素で、中性子検出に使う。"],
+[94,"Pu","プルトニウム","〔244〕","actino","プルトニウムは核燃料（MOX）や核兵器に使われ、宇宙探査機（ボイジャーなど）の電池でも活躍する。"],
+[95,"Am","アメリシウム","〔243〕","actino","アメリシウムは煙感知器の線源として一般家庭に存在する、身近な人工元素。"],
+[96,"Cm","キュリウム","〔247〕","actino","キュリウムは宇宙探査機の熱電発電や研究用のα線源に使う。"],
+[97,"Bk","バークリウム","〔247〕","actino","バークリウムは新元素を合成する「標的」として使う研究専用の元素。"],
+[98,"Cf","カリホルニウム","〔251〕","actino","カリホルニウムは強力な中性子源として、原子炉の起動や鉱物探査に使う。"],
+[99,"Es","アインスタイニウム","〔252〕","actino","アインスタイニウムは重元素合成の標的になる研究専用元素。"],
+[100,"Fm","フェルミウム","〔257〕","actino","フェルミウムは合成が極めて難しく、研究用にのみ作られる。"],
+[101,"Md","メンデレビウム","〔258〕","actino","メンデレビウムは周期表の考案者メンデレーエフにちなむ研究用元素。"],
+[102,"No","ノーベリウム","〔259〕","actino","ノーベリウムはノーベルにちなむ研究用元素。"],
+[103,"Lr","ローレンシウム","〔266〕","actino","ローレンシウムは粒子加速器の発明者にちなむ研究用元素。"],
+[104,"Rf","ラザホージウム","〔267〕","trans","ラザホージウムは化学的性質がハフニウムに似ると示された研究用の超重元素。"],
+[105,"Db","ドブニウム","〔268〕","trans","ドブニウムはロシアの研究所の町ドゥブナにちなむ研究用元素。"],
+[106,"Sg","シーボーギウム","〔269〕","trans","シーボーギウムは水銀と似た性質を示すと報告された研究用元素。"],
+[107,"Bh","ボーリウム","〔270〕","trans","ボーリウムは物理学者ボーアにちなむ研究用元素。"],
+[108,"Hs","ハッシウム","〔269〕","trans","ハッシウムはドイツのヘッセン地方にちなむ研究用元素。"],
+[109,"Mt","マイトネリウム","〔278〕","trans","マイトネリウムは核分裂を解明したマイトナー女史にちなむ研究用元素。"],
+[110,"Ds","ダルムスタチウム","〔281〕","trans","ダルムスタチウムはドイツのダルムシュタット研究所にちなむ研究用元素。"],
+[111,"Rg","レントゲニウム","〔282〕","trans","レントゲニウムはX線の発見者レントゲンにちなみ、金と同族と推定される。"],
+[112,"Cn","コペルニシウム","〔285〕","trans","コペルニシウムは天文学者コペルニクスにちなむ研究用元素。"],
+[113,"Nh","ニホニウム","〔286〕","post","ニホニウムは理化学研究所のチームが発見した、アジア初・日本発の元素。"],
+[114,"Fl","フレロビウム","〔289〕","post","フレロビウムはロシアの研究所にちなみ、希ガス的な性質が議論される研究用元素。"],
+[115,"Mc","モスコビウム","〔290〕","post","モスコビウムはモスクワ地方にちなむ研究用元素。"],
+[116,"Lv","リバモリウム","〔293〕","post","リバモリウムは米国の研究施設（ローレンス・リバモア）にちなむ研究用元素。"],
+[117,"Ts","テネシン","〔294〕","halogen","テネシンは米テネシー州にちなむ、ハロゲンと推定される研究用元素。"],
+[118,"Og","オガネソン","〔294〕","noble","オガネソンは最も重い元素で、数原子しか観測されていない研究用元素。"]
+];
+
+const CATS={
+  alkali:{l:"アルカリ金属",c:"#ff6b6b"},
+  alkearth:{l:"アルカリ土類金属",c:"#ffa94d"},
+  trans:{l:"遷移金属",c:"#5c9ded"},
+  post:{l:"金属（ポスト遷移）",c:"#3fc1c9"},
+  metalloid:{l:"半金属",c:"#9fca55"},
+  nonmetal:{l:"非金属",c:"#63d471"},
+  halogen:{l:"ハロゲン",c:"#ffd43b"},
+  noble:{l:"希ガス",c:"#b197fc"},
+  lantha:{l:"ランタノイド",c:"#f783ac"},
+  actino:{l:"アクチノイド",c:"#e64980"}
+};
+
+/* ================= データ: 元素名の語源(118種) ================= */
+const ETY={
+1:"ギリシャ語で「水を生むもの」。燃やすと水になることから名づけられた。",
+2:"ギリシャ語の「太陽」。日食の太陽スペクトルに現れた謎の輝線から命名された。",
+3:"ギリシャ語の「石」。植物の灰由来のほかのアルカリ金属と違い、鉱物から見つかった。",
+4:"宝石ベリル(緑柱石)の鉱物から。エメラルドやアクアマリンの主成分。",
+5:"硼砂(ボラックス)を意味するアラビア語に由来する。",
+6:"ラテン語の carbo「炭」。石炭や木炭を指す言葉から。",
+7:"「硝石を生むもの」を意味するフランス語から。日本語名は窒息させる「窒」による。",
+8:"ギリシャ語の「酸い」+「生む」。すべての酸のもとと考えられていたため。",
+9:"鉱物の蛍石(フローライト)から。鉱物名はラテン語の「流れる」が語源。",
+10:"ギリシャ語の neos「新しい」。",
+11:"英語の soda(ソーダ)から。ラテン語風の呼び名が記号の由来。",
+12:"ギリシャの地名マグネシア(テッサリア地方)から。",
+13:"ラテン語の alumen「ミョウバン」から。",
+14:"ラテン語の silex「火打ち石」=珪石(けいせき)から。",
+15:"ギリシャ語の「光を運ぶもの」。空気中で発光することから。",
+16:"ラテン語で硫黄を指す古い語。それ以前の語源は定かではない。",
+17:"ギリシャ語の「黄緑色」。気体そのものの色から。",
+18:"ギリシャ語の「怠け者」。ほとんど反応しないことから。",
+19:"アラビア語の「植物の灰」が語源。英語では potash(ポットの灰)と呼ばれた。",
+20:"ラテン語の calx「石灰」から。",
+21:"「スカンディナヴィア」をラテン語風にした名から。",
+22:"ギリシャ神話の巨人族ティタンから。",
+23:"北欧神話の美の女神ヴァナディースから。",
+24:"ギリシャ語の「色」。化合物が色とりどりなことから。",
+25:"ギリシャ語でマグネシア地方の鉱物を指す語から。",
+26:"ラテン語の ferrum から。",
+27:"ドイツ語の「地霊(コボルト)」。銀が採れず鉱山師を悩ませた鉱石の名から。",
+28:"ドイツ語の悪魔の名。銀と紛らわしい鉱石「悪魔の銅」から。",
+29:"ラテン語で「キプロス島の金属」の意から。",
+30:"ドイツ語の「とげ」。精錬すると棘状に凝る外見から。",
+31:"ラテン語の「ガリア(フランス)」から。",
+32:"ラテン語の「ドイツ」から。発見者が祖国に献名した。",
+33:"ギリシャ語の「黄色い顔料」(雄黄)を指す語から。",
+34:"ギリシャ語の「月」。すでに見つかっていた「地球」の元素と対になった。",
+35:"ギリシャ語の「悪臭」から。",
+36:"ギリシャ語の「隠されたもの」から。",
+37:"ラテン語の「深い赤」。スペクトル線の色から。",
+38:"スコットランドの村ストロンシャンから。",
+39:"スウェーデンの村イッテビー(Ytterby)から。同村ゆかりの元素は4つある。",
+40:"アラビア語の「黄金色」が語源の鉱物ジルコンから。",
+41:"ギリシャ神話のニオベ(タンタロスの娘)から。対の元素とともに命名された。",
+42:"ギリシャ語の「鉛」。鉛に似た鉱石だったため。",
+43:"ギリシャ語の「人工の」。最初につくられた人工元素。",
+44:"ラテン語の「ルーシ(ロシア)」から。",
+45:"ギリシャ語の「バラ」。塩の色から。",
+46:"小惑星パラスから。ギリシャの女神パラスにちなむ。",
+47:"ラテン語の「白く輝く」を意味する語から。",
+48:"ギリシャ語の「カドモスの土」=菱亜鉛鉱から。",
+49:"「藍(インディゴ)」。スペクトルに現れた靛青色の輝線から。",
+50:"古英語の tin。ラテン語風の呼び名が記号の由来。",
+51:"ギリシャ語の「単独で現れない」説や、修道僧を毒した説もある。",
+52:"ラテン語の tellus「大地・地球」から。",
+53:"ギリシャ語の「紫」。紫の蒸気を上げることから。",
+54:"ギリシャ語の「見知らぬ・珍しい」から。",
+55:"ラテン語の「青灰色」。スペクトル線の色から。",
+56:"ギリシャ語の「重い」。重晶石(バライト)の名から。",
+57:"ギリシャ語の「隠れる」。見つけにくかったことから。",
+58:"小惑星ケレスから。同年に発見された惑星と元素。",
+59:"ギリシャ語の「緑」+「双子」。緑色の塩の「双子」元素から分離した。",
+60:"ギリシャ語の「新しい」+「双子」。先に知られていた「双子」元素の片割れ。",
+61:"ギリシャ神話のプロメテウス(火を盗んだ神)から。",
+62:"鉱物サマルスカイトから。ロシアの鉱山技師サマルスキーにちなむ。",
+63:"「ヨーロッパ」大陸から。",
+64:"鉱物ガドリナイトから。フィンランドの化学者ガドリンにちなむ。",
+65:"スウェーデンの村イッテビー(Ytterby)から。",
+66:"ギリシャ語の「手に入れにくい」。分離が難しかったことから。",
+67:"ストックホルムのラテン語名から。",
+68:"スウェーデンの村イッテビー(Ytterby)から。",
+69:"スカンディナヴィアの古い地名トゥーレ(極北の地)から。",
+70:"スウェーデンの村イッテビー(Ytterby)から。",
+71:"パリの古いラテン語名から。",
+72:"コペンハーゲンのラテン語名から。",
+73:"ギリシャ神話のタンタロス。もう一つの対の元素とともに命名された。",
+74:"スウェーデン語の「重い石」から。ドイツ語名は「狼の泡」の意。",
+75:"ライン川のラテン語名から。",
+76:"ギリシャ語の「匂い」。酸化物の刺激臭から。",
+77:"ギリシャ語の「虹」。塩が色とりどりに光ることから。",
+78:"スペイン語の「小さな銀」。銀と誤認されたことから。",
+79:"古英語の gold。ラテン語風の呼び名は「暁の輝き」の意。",
+80:"ローマ神話の速足の神(水星)から。ラテン語では「水の銀」の意。",
+81:"ギリシャ語の「若芽・緑の枝」。スペクトルの緑色の線から。",
+82:"古英語の lead。ラテン語風の呼び名は水道管の金属の意。",
+83:"ドイツ語の Wismut から。語源には定説がない。",
+84:"「ポーランド」。発見者マリー・キュリーの祖国に献名された。",
+85:"ギリシャ語の「安定しない」から。",
+86:"ラジウムから出る気体であることから。ラジウムはラテン語の「光線」。",
+87:"「フランス」。発見者の祖国に献名された。",
+88:"ラテン語の radius「光線・放射」から。",
+89:"ギリシャ語の「光線・放射」から。",
+90:"北欧神話の雷神トールから。鉱物トール石の名でもある。",
+91:"ギリシャ語の「最初の」+アクチニウム。崩壊系列でその親になる。",
+92:"天王星から。発見当時の新惑星にちなんだ命名。",
+93:"海王星から。ウラン(天王星)のつぎの惑星。",
+94:"冥王星から。海王星のつぎの惑星。",
+95:"「アメリカ大陸」。ヨーロッパの元素と対になる命名。",
+96:"キュリー夫妻から。",
+97:"米国バークレー(カリフォルニア大学)から。",
+98:"「カリフォルニア州(大学)」から。",
+99:"物理学者アインシュタインから。",
+100:"物理学者フェルミから。",
+101:"周期表の作成者メンデレーエフから。",
+102:"化学者で実業家のノーベルから。",
+103:"サイクロトロンの発明者ローレンスから。",
+104:"原子核物理学の父ラザフォードから。",
+105:"ロシアの研究都市ドゥブナから。",
+106:"核化学者シーボーグから。生前の人物にちなんだ初の元素。",
+107:"量子力学の建設者ボーアから。",
+108:"ドイツのヘッセン地方のラテン語名から。",
+109:"核分裂を解明した物理学者マイトナーから。",
+110:"独ダルムシュタット(研究所の所在地)から。",
+111:"X線の発見者レントゲンから。",
+112:"天文学者コペルニクスから。",
+113:"「日本(Nihon)」。理化学研究所のチームが発見した。",
+114:"ロシアの核物理学者フレロフから。",
+115:"「モスクワ地方」から。",
+116:"米国のローレンス・リバモア国立研究所から。",
+117:"「テネシー州」から。",
+118:"ロシアの核物理学者オガネソンから。生前の人物にちなんだ元素。"
+};
+
+/* ================= データ: 素粒子・標準模型 =================
+   s:記号 n:名称 t:分類 row:行 g:世代 q:電荷 m:質量 y:発見 d:説明 */
+const PARTICLES=[
+  {s:"u",n:"アップクォーク",t:"quark",row:2,g:1,q:"+2/3",m:"約2.2 MeV",y:"1968年（クォークの実在確認）",d:"陽子と中性子の中身。電荷+2/3の第I世代クォークで、最も軽いクォーク。"},
+  {s:"c",n:"チャームクォーク",t:"quark",row:2,g:2,q:"+2/3",m:"約1.27 GeV",y:"1974年",d:"第II世代のアップ型クォーク。J/ψ（ジェイサイ）中間子の発見は素粒子論の「11月革命」と呼ばれる。"},
+  {s:"t",n:"トップクォーク",t:"quark",row:2,g:3,q:"+2/3",m:"約172.8 GeV",y:"1995年",d:"全素粒子で最も重い。単独ではハドロンを作れず、発生すると速やかに崩壊する。"},
+  {s:"d",n:"ダウンクォーク",t:"quark",row:3,g:1,q:"−1/3",m:"約4.7 MeV",y:"1968年（クォークの実在確認）",d:"電荷−1/3の第I世代クォーク。陽子や中性子を構成するもう一方の役者。"},
+  {s:"s",n:"ストレンジクォーク",t:"quark",row:3,g:2,q:"−1/3",m:"約93 MeV",y:"1968年",d:"電荷−1/3の第II世代クォーク。K中間子の「奇妙な」ふるまいが名前の由来。"},
+  {s:"b",n:"ボトムクォーク",t:"quark",row:3,g:3,q:"−1/3",m:"約4.18 GeV",y:"1977年",d:"電荷−1/3の第III世代クォーク。Υ（ウプシロン）中間子の発見で確認された。"},
+  {s:"e",n:"電子",t:"lepton",row:4,g:1,q:"−1",m:"約0.511 MeV",y:"1897年",d:"原子の外側の雲と電流の主役。人類が最初に発見した素粒子。"},
+  {s:"μ",n:"ミュー粒子",t:"lepton",row:4,g:2,q:"−1",m:"約105.7 MeV",y:"1936年",d:"電子の約207倍重い第II世代。宇宙線が大気で作り、次々と地上に降り注ぐ。寿命は2.2マイクロ秒。"},
+  {s:"τ",n:"タウ粒子",t:"lepton",row:4,g:3,q:"−1",m:"約1.777 GeV",y:"1975年",d:"電子の約3477倍の重さを持つ第III世代。発生してもすぐに崩壊する。"},
+  {s:"ν<sub>e</sub>",n:"電子ニュートリノ",t:"lepton",row:5,g:1,q:"0",m:"1 eV未満",y:"1956年",d:"パウリが予言し、1956年に観測。太陽の核融合で大量に生まれ、地球を素通りする。"},
+  {s:"ν<sub>μ</sub>",n:"ミューニュートリノ",t:"lepton",row:5,g:2,q:"0",m:"1 eV未満",y:"1962年",d:"ミュー粒子と対をなすニュートリノ。1962年に発見された。"},
+  {s:"ν<sub>τ</sub>",n:"タウニュートリノ",t:"lepton",row:5,g:3,q:"0",m:"1 eV未満",y:"2000年",d:"2000年、DONUT実験で直接観測。3種のニュートリノは「振動」で互いに変わり、質量を持つことが示された。"},
+  {s:"γ",n:"光子",t:"gauge",row:2,g:0,q:"0",m:"0（質量なし）",y:"1905年（光量子仮説）",d:"電磁力を伝える光の粒子。質量・電荷ともゼロで、遠くまで飛べる。"},
+  {s:"g",n:"グルーオン",t:"gauge",row:3,g:0,q:"0",m:"0（質量なし）",y:"1979年",d:"強い力を伝え、クォークを陽子などに束縛する「のり」。自身も色荷を持ち、互いに引き合う。"},
+  {s:"W±",n:"W粒子",t:"gauge",row:4,g:0,q:"±1",m:"約80.4 GeV",y:"1983年",d:"弱い力を伝える帯電した媒介粒子。ベータ崩壊や太陽の核融合を仲介する。"},
+  {s:"Z⁰",n:"Z粒子",t:"gauge",row:5,g:0,q:"0",m:"約91.2 GeV",y:"1983年",d:"弱い力を伝える中性の媒介粒子。電荷を持たない相互作用としてCERNで見つかった。"},
+  {s:"H",n:"ヒッグス粒子",t:"higgs",row:6,g:0,q:"0",m:"約125.1 GeV",y:"2012年",d:"真空に満ちる場との結合が粒子の質量を生む仕組みの証。1964年の予言から48年越しの発見。"}
+];
+const PTYPES={
+  quark:{l:"クォーク",c:"#ffa94d"},
+  lepton:{l:"レプトン",c:"#63d471"},
+  gauge:{l:"力の媒介粒子",c:"#5c9ded"},
+  higgs:{l:"ヒッグス",c:"#ffd166"}
+};
+
+/* ================= ユーティリティ ================= */
+const $=s=>document.querySelector(s);
+const shuf=a=>a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(p=>p[1]);
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function hexA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+
+/* 周期表上の位置（行,列）: 行1-7=本表, 9-10=下段fブロック */
+function posOf(z){
+  if(z===1)return[1,1]; if(z===2)return[1,18];
+  if(z<=4)return[2,z-2]; if(z<=10)return[2,z+8];
+  if(z<=12)return[3,z-10]; if(z<=18)return[3,z];
+  if(z<=36)return[4,z-18]; if(z<=54)return[5,z-36];
+  if(z<=56)return[6,z-54]; if(z<=71)return[9,z-54];
+  if(z<=86)return[6,z-68]; if(z<=88)return[7,z-86];
+  if(z<=103)return[10,z-86]; return[7,z-100];
+}
+
+/* ================= 状態 ================= */
+let learned=new Set(load("ptm.learned",[]));
+const EL={}; ELEMENTS.forEach(E=>EL[E[0]]=E);
+let selZ=6;
+const mainCells=new Map();
+
+/* ================= 周期表の描画 ================= */
+function buildTable(host,opts){
+  host.innerHTML="";
+  const frag=document.createDocumentFragment();
+  const gap=document.createElement("div");
+  gap.className="gaprow"; gap.style.gridRow="8"; frag.appendChild(gap);
+  const mkPh=(r,label,sub)=>{
+    const d=document.createElement("button");
+    d.type="button"; d.className="cell ph"; d.style.gridRow=String(r); d.style.gridColumn="3";
+    d.innerHTML=`<span class="sym">${label}</span><span class="nm">${sub}</span>`;
+    if(opts.onPh)d.addEventListener("click",()=>opts.onPh(label==="57-71"?"lantha":"actino"));
+    return d;
+  };
+  frag.appendChild(mkPh(6,"57-71","ランタノイド"));
+  frag.appendChild(mkPh(7,"89-103","アクチノイド"));
+  for(const E of ELEMENTS){
+    const[r,c]=posOf(E[0]);
+    const cell=document.createElement("button");
+    cell.type="button"; cell.className="cell";
+    cell.style.gridRow=String(r); cell.style.gridColumn=String(c);
+    cell.dataset.z=E[0];
+    const cat=CATS[E[4]];
+    cell.style.setProperty("--c",cat.c);
+    cell.style.setProperty("--cbg",hexA(cat.c,.15));
+    cell.innerHTML=`<span class="z">${E[0]}</span><span class="sym">${E[1]}</span>`+
+      (opts.names?`<span class="nm">${E[2]}</span>`:"");
+    cell.addEventListener("click",()=>opts.onPick(E[0],cell));
+    frag.appendChild(cell);
+  }
+  host.appendChild(frag);
+}
+
+function select(z,openSheet){
+  selZ=z;
+  mainCells.forEach((cell,zz)=>cell.classList.toggle("sel",zz===z));
+  renderDetail(z);
+  if(openSheet&&window.matchMedia("(max-width:1020px)").matches){
+    $("#detail").classList.add("open");
+  }
+}
+
+function renderDetail(z){
+  const E=EL[z],cat=CATS[E[4]],[r,c]=posOf(z);
+  const isF=E[4]==="lantha"||E[4]==="actino";
+  const block=isF?"f":(z===2||c<=2?"s":(c<=12?"d":"p"));
+  const group=isF?"―":c+"族";
+  const period=E[4]==="lantha"?6:(E[4]==="actino"?7:r);
+  const on=learned.has(z);
+  $("#detail").innerHTML=`
+    <button class="d-close" type="button" aria-label="閉じる">✕</button>
+    <div class="d-head">
+      <span class="d-sym" style="color:${cat.c}">${E[1]}</span>
+      <div><h2>${E[2]}</h2><div class="d-meta">#${z} ・ <span style="color:${cat.c}">${cat.l}</span></div></div>
+    </div>
+    <dl class="d-stats">
+      <div><dt>原子量</dt><dd>${E[3]}</dd></div>
+      <div><dt>族</dt><dd>${group}</dd></div>
+      <div><dt>周期</dt><dd>${period}</dd></div>
+      <div><dt>区画</dt><dd>${block}</dd></div>
+    </dl>
+    <div class="d-use"><h3>主な用途・役割</h3><p>${E[5]}</p></div>
+    <button id="starBtn" type="button" class="${on?"on":""}">${on?"★ 覚えた済み":"☆ 覚えたに登録"}</button>`;
+  $("#detail .d-close").addEventListener("click",()=>$("#detail").classList.remove("open"));
+  $("#starBtn").addEventListener("click",()=>{
+    learned.has(z)?learned.delete(z):learned.add(z);
+    store("ptm.learned",[...learned]);
+    const cell=mainCells.get(z);
+    if(cell)cell.classList.toggle("learned",learned.has(z));
+    updateProg(); renderDetail(z);
+  });
+}
+
+function updateProg(){
+  $("#prog").textContent=`★ ${learned.size}/118`;
+}
+
+/* 検索+分類フィルタ */
+function applyFilter(){
+  const q=$("#search").value.trim().toLowerCase();
+  const act=new Set([...document.querySelectorAll("#cats .chip.on")].map(b=>b.dataset.cat));
+  mainCells.forEach((cell,z)=>{
+    const E=EL[z];
+    const catOk=act.size===0||act.has(E[4]);
+    const qOk=!q||E[2].includes(q)||E[1].toLowerCase().includes(q)||String(z)===q||E[5].includes(q);
+    cell.classList.toggle("dim",!(catOk&&qOk));
+  });
+}
+
+function buildCats(){
+  const host=$("#cats");
+  for(const[key,v]of Object.entries(CATS)){
+    const b=document.createElement("button");
+    b.type="button"; b.className="chip"; b.dataset.cat=key;
+    b.style.setProperty("--c",v.c);
+    b.innerHTML=`<span class="dot"></span>${v.l}`;
+    b.addEventListener("click",()=>{b.classList.toggle("on");applyFilter();});
+    host.appendChild(b);
+  }
+}
+
+/* ================= タブ切替 ================= */
+function show(v){
+  ["table","quiz","sm"].forEach(k=>{
+    document.getElementById("v-"+k).hidden=k!==v;
+    const t=document.querySelector(`.tabs [data-v="${k}"]`);
+    if(t)t.classList.toggle("on",k===v);
+  });
+  history.replaceState(null,"","#"+v);
+  window.scrollTo(0,0);
+}
+
+/* ================= クイズ ================= */
+const MODES={
+  elem:[
+    {id:"sym2name",t:"記号 → 元素名",d:"「Fe」はどの元素?"},
+    {id:"name2sym",t:"元素名 → 記号",d:"「銅」の記号は?"},
+    {id:"use2elem",t:"用途 → 元素",d:"説明文から元素を当てる"},
+    {id:"ety2elem",t:"語源 → 元素",d:"名前の由来から元素を当てる"},
+    {id:"locate",t:"位置を当てる",d:"周期表のマスを直接押す"}
+  ],
+  part:[
+    {id:"psym2name",t:"記号 → 粒子名",d:"「γ」は何の粒子?"},
+    {id:"pdesc2p",t:"説明 → 粒子",d:"説明文から粒子を当てる"}
+  ]
+};
+const RANGES={all:[1,118],a:[1,20],b:[21,54],c:[55,118]};
+const quiz={subject:"elem",mode:"sym2name",range:"all",qs:[],i:0,score:0,streak:0,misses:[],answered:false};
+
+function poolFor(){
+  if(quiz.subject==="part")return PARTICLES.slice();
+  const[a,b]=RANGES[quiz.range];
+  return ELEMENTS.filter(E=>E[0]>=a&&E[0]<=b);
+}
+function hsKey(){return `ptm.hs.${quiz.subject}.${quiz.mode}.${quiz.range}`;}
+function renderBest(){
+  const best=load(hsKey(),null);
+  $("#bestLine").textContent=best?`この設定のベストスコア: ${best}/10`:"この設定の記録はまだありません（10問出題）";
+}
+function renderModeRow(){
+  const host=$("#modeRow");host.innerHTML="";
+  for(const m of MODES[quiz.subject]){
+    const b=document.createElement("button");
+    b.type="button"; b.className="mode-btn"+(m.id===quiz.mode?" on":"");
+    b.innerHTML=`<b>${m.t}</b><span>${m.d}</span>`;
+    b.addEventListener("click",()=>{quiz.mode=m.id;renderModeRow();renderBest();});
+    host.appendChild(b);
+  }
+  $("#rangeSec").hidden=quiz.subject==="part";
+}
+
+function pickChoices(pool,correct,f,k=4){
+  const set=new Set([f(correct)]);
+  while(set.size<k)set.add(f(pool[Math.floor(Math.random()*pool.length)]));
+  return shuf([...set]).map(v=>({t:v,ok:v===f(correct)}));
+}
+function makeQ(it,pool){
+  const isP=quiz.subject==="part";
+  const name=isP?it.n:it[2], sym=isP?it.s:it[1];
+  const m=quiz.mode;
+  if(m==="locate")return{type:"locate",z:it[0],name,sym};
+  if(m==="sym2name"||m==="psym2name")
+    return{type:"choice",text:`記号 <span class="q-sym">${sym}</span> は?`,choices:pickChoices(pool,it,x=>isP?x.n:x[2]),ans:name};
+  if(m==="name2sym")
+    return{type:"choice",text:`<b>${name}</b> の元素記号は?`,choices:pickChoices(pool,it,x=>x[1]),ans:sym};
+  if(m==="use2elem"){
+    const rx=new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g");
+    return{type:"choice",text:"つぎの説明文の元素は?",quote:it[5].replace(rx,"〇〇"),choices:pickChoices(pool,it,x=>x[2]),ans:name};
+  }
+  if(m==="ety2elem"){
+    const rx=new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g");
+    return{type:"choice",text:"つぎの語源の元素は?",quote:ETY[it[0]].replace(rx,"〇〇"),choices:pickChoices(pool,it,x=>x[2]),ans:name};
+  }
+  if(m==="pdesc2p")
+    return{type:"choice",text:"つぎの説明文の粒子は?",quote:it.d,choices:pickChoices(pool,it,x=>x.n),ans:name};
+}
+
+function startQuiz(){
+  const pool=poolFor();
+  if(pool.length<4)return;
+  quiz.qs=shuf(pool).slice(0,10).map(it=>makeQ(it,pool));
+  quiz.i=0; quiz.score=0; quiz.streak=0; quiz.misses=[];
+  $("#quizSetup").hidden=true; $("#quizResult").hidden=true; $("#quizStage").hidden=false;
+  renderQ();
+}
+function renderQ(){
+  const q=quiz.qs[quiz.i]; quiz.answered=false;
+  $("#qProg").textContent=`${quiz.i+1}/10`;
+  $("#qScore").textContent=quiz.score;
+  $("#qStreak").textContent=quiz.streak;
+  $("#qBar").style.width=(quiz.i/10*100)+"%";
+  const area=$("#qArea");
+  if(q.type==="locate"){
+    area.innerHTML=`<p class="q-text">「<b>${q.name}</b>」（${q.sym}）のマスを押して</p><div class="tblwrap" style="margin-top:14px"><div class="pt" id="miniTable"></div></div>`;
+    buildTable($("#miniTable"),{names:false,onPick:(z,cell)=>{
+      if(quiz.answered)return; quiz.answered=true;
+      const ok=z===q.z;
+      if(ok){
+        cell.classList.add("good");
+        quiz.score++; quiz.streak++;
+      }else{
+        cell.classList.add("bad");
+        const c=$(`#miniTable .cell[data-z="${q.z}"]`);
+        if(c)c.classList.add("good");
+        quiz.streak=0;
+        quiz.misses.push(`${q.sym} ${q.name}`);
+      }
+      $("#qScore").textContent=quiz.score; $("#qStreak").textContent=quiz.streak;
+      setTimeout(nextQ,1000);
+    }});
+  }else{
+    area.innerHTML=`<p class="q-text">${q.text}</p>${q.quote?`<blockquote class="q-quote">${q.quote}</blockquote>`:""}<div class="choices"></div><button class="next-btn primary" type="button" hidden></button>`;
+    const ch=area.querySelector(".choices");
+    q.choices.forEach(c=>{
+      const b=document.createElement("button");
+      b.type="button"; b.className="choice"; b.textContent=c.t;
+      b.addEventListener("click",()=>{
+        if(quiz.answered)return; quiz.answered=true;
+        [...ch.children].forEach((btn,i)=>{
+          btn.disabled=true;
+          if(q.choices[i].ok)btn.classList.add("ok");
+        });
+        if(c.ok){quiz.score++;quiz.streak++;}
+        else{b.classList.add("ng");quiz.streak=0;quiz.misses.push(q.ans);}
+        $("#qScore").textContent=quiz.score; $("#qStreak").textContent=quiz.streak;
+        const nb=area.querySelector(".next-btn");
+        nb.hidden=false;
+        nb.textContent=quiz.i===9?"結果を見る →":"つぎへ →";
+        nb.addEventListener("click",nextQ,{once:true});
+      });
+      ch.appendChild(b);
+    });
+  }
+}
+function nextQ(){
+  quiz.i++;
+  if(quiz.i>=quiz.qs.length){finishQuiz();return;}
+  renderQ();
+}
+function finishQuiz(){
+  $("#quizStage").hidden=true;
+  const best=load(hsKey(),0);
+  if(quiz.score>best)store(hsKey(),quiz.score);
+  const misses=[...new Set(quiz.misses.filter(Boolean))];
+  $("#quizResult").innerHTML=`
+    <div class="panelbox center">
+      <p class="r-sub">${quiz.score===10?"完答!<br>":quiz.score>=8?"好調です。<br>":"間違えた項目を周期表で復習しましょう。<br>"}</p>
+      <div class="r-score">${quiz.score}<span style="font-size:22px;color:var(--muted)">/10</span></div>
+      <p class="r-sub">${quiz.score>best?"ベストスコア更新!":`ベスト: ${Math.max(best,quiz.score)}/10`}</p>
+      ${misses.length?`<div style="margin-top:14px"><p class="r-sub" style="margin:0 0 4px">間違えた問題の正解</p><div class="miss-chips" style="justify-content:center">${misses.map(m=>`<span>${esc(m)}</span>`).join("")}</div></div>`:""}
+      <div class="r-btns">
+        <button class="next-btn" type="button" id="retryBtn">もう一度</button>
+        <button class="next-btn primary" type="button" id="cfgBtn">設定を変える</button>
+      </div>
+    </div>`;
+  $("#quizResult").hidden=false;
+  $("#retryBtn").addEventListener("click",startQuiz);
+  $("#cfgBtn").addEventListener("click",()=>{
+    $("#quizResult").hidden=true; $("#quizSetup").hidden=false; renderBest();
+  });
+}
+
+/* ================= 標準模型 ================= */
+let selP=null;
+function buildSM(){
+  const host=$("#smGrid"); host.innerHTML="";
+  const add=(cls,html,gr,gc,styleObj,onClick)=>{
+    const d=document.createElement(onClick?"button":"div");
+    if(onClick)d.type="button";
+    d.className=cls; d.style.gridRow=String(gr); d.style.gridColumn=String(gc);
+    if(styleObj)for(const[k,v]of Object.entries(styleObj)){
+      if(k.startsWith("--"))d.style.setProperty(k,v);else d.style[k]=v;
+    }
+    d.innerHTML=html;
+    if(onClick)d.addEventListener("click",onClick);
+    host.appendChild(d); return d;
+  };
+  add("hdr","",1,1);
+  ["第I世代","第II世代","第III世代","力の媒介"].forEach((h,i)=>add("hdr",h,1,i+2));
+  add("lbl","クォーク",2,1,{gridRow:"2 / 4"});
+  add("lbl","レプトン",4,1,{gridRow:"4 / 6"});
+  for(const p of PARTICLES){
+    if(p.t==="higgs")continue;
+    const ty=PTYPES[p.t];
+    const col=p.g>0?p.g+1:5;
+    const tile=add("ptile",
+      `<span class="s">${p.s}</span><span class="n">${p.n}</span><span class="qm">${p.q} ・ ${p.m}</span>`,
+      p.row,col,{"--c":ty.c,"--cbg":hexA(ty.c,.13)},()=>{
+        selP=p;
+        host.querySelectorAll(".ptile").forEach(t=>t.classList.remove("sel"));
+        tile.classList.add("sel");
+        renderSMDetail();
+      });
+    if(!selP&&p.s==="e"){selP=p;tile.classList.add("sel");}
+  }
+  const hy=PTYPES.higgs;
+  const hTile=add("ptile higgs-tile","",6,1,{"--c":hy.c,"--cbg":hexA(hy.c,.10),"gridColumn":"1 / -1"},()=>{
+    selP=PARTICLES.find(p=>p.t==="higgs");
+    host.querySelectorAll(".ptile").forEach(t=>t.classList.remove("sel"));
+    hTile.classList.add("sel");
+    renderSMDetail();
+  });
+  hTile.innerHTML=`<span class="s">H</span><span class="n">ヒッグス粒子 ― 質量の源（場との結合で質量が生まれる。スピン0）</span><span class="qm">0 ・ 約125.1 GeV</span>`;
+  renderSMDetail();
+}
+function renderSMDetail(){
+  const p=selP; if(!p)return;
+  const ty=PTYPES[p.t];
+  const gen=p.g>0?`第${["I","II","III"][p.g-1]}世代`:"―";
+  $("#smDetail").innerHTML=`
+    <div class="d-head">
+      <span class="d-sym" style="color:${ty.c}">${p.s}</span>
+      <div><h2>${p.n}</h2><div class="d-meta">${ty.l} ・ ${gen} ・ スピン${p.t==="higgs"?"0":(p.t==="gauge"?"1":"1/2")}</div></div>
+    </div>
+    <dl class="d-stats">
+      <div><dt>電荷</dt><dd>${p.q}</dd></div>
+      <div><dt>質量</dt><dd>${p.m}</dd></div>
+      <div style="grid-column:span 2"><dt>発見</dt><dd>${p.y}</dd></div>
+    </dl>
+    <div class="d-use"><h3>役割</h3><p>${p.d}</p></div>
+    <p class="hint" style="margin-top:12px">各粒子には電荷を反転させた反粒子が存在します（表は粒子側）。</p>`;
+}
+
+/* ================= 初期化 ================= */
+function init(){
+  buildCats();
+  buildTable($("#pt"),{names:true,onPick:(z)=>select(z,true),onPh:(cat)=>{
+    const chip=document.querySelector(`#cats .chip[data-cat="${cat}"]`);
+    if(chip){chip.classList.add("on");applyFilter();}
+  }});
+  mainCells.clear();
+  document.querySelectorAll("#pt .cell[data-z]").forEach(c=>mainCells.set(+c.dataset.z,c));
+  mainCells.forEach((cell,z)=>cell.classList.toggle("learned",learned.has(z)));
+  updateProg();
+
+  const todayE=ELEMENTS[Math.floor(Date.now()/86400000)%118];
+  const tb=$("#todayChip");
+  tb.innerHTML=`今日の元素 <b>#${todayE[0]} ${todayE[1]} ${todayE[2]}</b>`;
+  tb.addEventListener("click",()=>{select(todayE[0],true);$("#detail").scrollIntoView({behavior:"smooth",block:"nearest"});});
+
+  $("#search").addEventListener("input",applyFilter);
+  select(selZ,false);
+
+  document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>show(b.dataset.v)));
+
+  document.querySelectorAll("#subjRow .chip").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#subjRow .chip").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    quiz.subject=b.dataset.subj;
+    quiz.mode=MODES[quiz.subject][0].id;
+    renderModeRow(); renderBest();
+  }));
+  document.querySelectorAll("#rangeRow .chip").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#rangeRow .chip").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); quiz.range=b.dataset.range; renderBest();
+  }));
+  $("#startBtn").addEventListener("click",startQuiz);
+  renderModeRow(); renderBest();
+
+  buildSM();
+
+  let v=new URLSearchParams(location.search).get("v")||location.hash.replace("#","")||DEFAULT_VIEW;
+  if(!["table","quiz","sm"].includes(v))v=DEFAULT_VIEW;
+  show(v);
+}
+init();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
